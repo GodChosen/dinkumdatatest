@@ -13,16 +13,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Build Docker Image
-      run: |
-        docker buildx create --use
-        docker buildx build --platform linux/amd64,linux/arm64 -t godchosen/dikumdatatestapp:latest .
-
     - name: Login to DockerHub
       run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      
+    - name: Build Docker Image
+      run: docker build --file Dockerfile -t godchosen/dikumdatatestapp:latest .
 
     - name: Push Docker Image to DockerHub
       run: docker push godchosen/dikumdatatestapp:latest
