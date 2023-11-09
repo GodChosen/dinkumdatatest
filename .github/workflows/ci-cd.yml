@@ -1,0 +1,46 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build Docker Image
+      run: |
+        docker buildx create --use
+        docker buildx build --platform linux/amd64,linux/arm64 -t godchosen/dikumdatatestapp:latest .
+
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+    - name: Push Docker Image to DockerHub
+      run: docker push godchosen/dikumdatatestapp:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Copy SSH Key
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+    - name: Copy SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan your-ec2-instance-ip >> ~/.ssh/known_hosts
+
+    - name: Pull Docker Image on AWS EC2
+      run: ssh -i ~/.ssh/id_rsa ec2-user@ec2-54-225-38-15.compute-1.amazonaws.com "docker pull godchosen/dikumdatatestapp:latest"
